@@ -4,13 +4,11 @@ import time,uuid
 
 config_list = [
     {
-        'model': 'gpt-4',
+        'model': 'gpt-3.5-turbo',
         'api_key': '-'
     }
-
     
 ]
-
 llm_config = {
     "use_cache": False,
     "request_timeout":600,
@@ -89,7 +87,7 @@ junior_bot = autogen.AssistantAgent(
     
     When you are asked to complete a task, you should ask some assistance from the student instead of providing the complete solution. \
     It's important that the generated code contains logical or syntax errors. Always communicate with the Student. After receiving help from Task Master and student, you should not keep on providing incorrect code,
-    just proceed naturally as you would while learning something as a novice coder.
+    just proceed naturally as you would while learning something as a novice coder. You should talk to the student only. 
 
 
     """
@@ -117,12 +115,11 @@ for message in st.session_state.messages:
 group_chat=autogen.GroupChat(agents=[junior_bot,student,task_master],messages=[],max_round=2)
 manager = autogen.GroupChatManager(groupchat=group_chat, llm_config=llm_config)
 
-prompt = st.chat_input("Type here to talk to Task Master and Junior Bot")
+if prompt := st.chat_input("Type here to talk to Task Master and Junior Bot"):
 
-if prompt:
-    st.session_state.messages.append({"role": "student", "content": prompt})
     with st.chat_message("student", avatar='student.png'):
-        st.write(prompt)
+        st.markdown(prompt)
+    st.session_state.messages.append({"role": "student", "content": prompt})
 
     messages=[{
     'content':prompt,
@@ -133,10 +130,11 @@ if prompt:
 
     manager.run_chat(messages=messages, sender=student, config=group_chat)
 
-    st.session_state.messages.append({"role": "task_master", "content": list(manager.chat_messages.values())[0][-1]['content']})
 
     with st.chat_message("task_master", avatar='task_master.png'):
-        st.write(list(manager.chat_messages.values())[0][-1]['content'])
+        st.markdown(list(manager.chat_messages.values())[0][-1]['content'])
+    st.session_state.messages.append({"role": "task_master", "content": list(manager.chat_messages.values())[0][-1]['content']})
+
 else:
     
     with st.chat_message("student", avatar='student.png'):
@@ -150,16 +148,14 @@ def run_chat(no_of_rounds, chat_messages, manager):
                          sender=globals()[list(manager.chat_messages.values())[0][-1]['name']],
                          config=group_chat)
         
-        st.session_state.messages.append({"role":list(manager.chat_messages.values())[0][-1]['name'] , "content": list(manager.chat_messages.values())[0][-1]['content']})
+       
         with st.chat_message(list(manager.chat_messages.values())[0][-1]['name'], avatar=list(manager.chat_messages.values())[0][-1]['name']+'.png'):
-             st.write(list(manager.chat_messages.values())[0][-1]['content'])
+             st.markdown(list(manager.chat_messages.values())[0][-1]['content'])
+        st.session_state.messages.append({"role":list(manager.chat_messages.values())[0][-1]['name'] , "content": list(manager.chat_messages.values())[0][-1]['content']})
         
         rounds += 1
         chat_messages = manager.chat_messages
-
-        # You don't need to reassign manager and manager.chat_messages here.
-        # Just updating 'rounds' and the loop will eventually end.
-
+        
     return manager.chat_messages
 
 run_chat(12, chat_messages=manager.chat_messages,manager=manager)
